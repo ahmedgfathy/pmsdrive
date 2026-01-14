@@ -65,8 +65,14 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
-        Auth::logout();
+        // Check if user is authenticated via token or session
+        if ($request->user()) {
+            // Delete all tokens for the user
+            $request->user()->tokens()->delete();
+        }
+        
+        // Also logout from session
+        Auth::guard('web')->logout();
 
         return response()->json([
             'message' => 'Logged out successfully'

@@ -4,12 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class AdminController extends Controller
 {
-    public function pendingUsers()
+    public function pendingUsers(Request $request)
     {
-        $this->authorize('viewAny', User::class);
+        // Check if user is admin
+        if (!$request->user() || !$request->user()->is_admin) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
 
         $users = User::where('approved', false)
             ->orderBy('created_at', 'desc')
@@ -18,30 +22,36 @@ class AdminController extends Controller
         return response()->json($users);
     }
 
-    public function approveUser($id)
+    public function approveUser(Request $request, $id)
     {
-        $user = User::findOrFail($id);
-        $this->authorize('update', $user);
+        if (!$request->user() || !$request->user()->is_admin) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
 
+        $user = User::findOrFail($id);
         $user->approved = true;
         $user->save();
 
         return response()->json(['message' => 'User approved successfully']);
     }
 
-    public function rejectUser($id)
+    public function rejectUser(Request $request, $id)
     {
-        $user = User::findOrFail($id);
-        $this->authorize('delete', $user);
+        if (!$request->user() || !$request->user()->is_admin) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
 
+        $user = User::findOrFail($id);
         $user->delete();
 
         return response()->json(['message' => 'User rejected successfully']);
     }
 
-    public function allUsers()
+    public function allUsers(Request $request)
     {
-        $this->authorize('viewAny', User::class);
+        if (!$request->user() || !$request->user()->is_admin) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
 
         $users = User::orderBy('created_at', 'desc')->get();
 
