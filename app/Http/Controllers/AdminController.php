@@ -7,15 +7,10 @@ use Illuminate\Http\Request;
 
 class AdminController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('auth:sanctum');
-    }
-
     public function pendingUsers()
     {
         $this->authorize('viewAny', User::class);
-        
+
         $users = User::where('approved', false)
             ->orderBy('created_at', 'desc')
             ->get();
@@ -25,28 +20,23 @@ class AdminController extends Controller
 
     public function approveUser($id)
     {
-        $this->authorize('update', User::class);
-
         $user = User::findOrFail($id);
+        $this->authorize('update', $user);
+
         $user->approved = true;
         $user->save();
 
-        return response()->json([
-            'message' => 'User approved successfully',
-            'user' => $user
-        ]);
+        return response()->json(['message' => 'User approved successfully']);
     }
 
     public function rejectUser($id)
     {
-        $this->authorize('delete', User::class);
-
         $user = User::findOrFail($id);
+        $this->authorize('delete', $user);
+
         $user->delete();
 
-        return response()->json([
-            'message' => 'User rejected and deleted successfully'
-        ]);
+        return response()->json(['message' => 'User rejected successfully']);
     }
 
     public function allUsers()
