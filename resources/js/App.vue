@@ -13,99 +13,89 @@
       @show-login="currentView = 'login'"
     />
 
-    <!-- Admin Panel -->
-    <AdminPanel
-      v-else-if="currentView === 'admin'"
-      @back-to-dashboard="currentView = 'dashboard'"
-      @logout="handleLogout"
-    />
-    
-    <!-- Dashboard (Authenticated) -->
-    <template v-else-if="currentView === 'dashboard'">
-      <!-- Navigation Bar -->
-      <nav class="bg-white shadow-lg">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Main Application (Authenticated) -->
+    <template v-else>
+      <!-- Top Navigation Bar -->
+      <nav class="bg-white shadow-md">
+        <div class="mx-auto px-4 sm:px-6 lg:px-8">
           <div class="flex justify-between h-16">
+            <!-- Logo and Brand -->
             <div class="flex items-center space-x-4">
               <img src="/assets/images/logo.svg" alt="PMS Logo" class="h-10" />
               <h1 class="text-2xl font-bold text-blue-600">PMS Drive</h1>
             </div>
-            <div class="flex items-center space-x-8">
-              <span class="text-gray-600 text-sm">Welcome, {{ user?.name }}</span>
-              <a href="#" class="text-gray-700 hover:text-blue-600 font-medium">Dashboard</a>
-              <a href="#" class="text-gray-700 hover:text-blue-600 font-medium">Projects</a>
-              <a href="#" class="text-gray-700 hover:text-blue-600 font-medium">Tasks</a>
-              <button v-if="user?.is_admin" @click="currentView = 'admin'" class="text-purple-600 hover:text-purple-800 font-medium">
+            
+            <!-- Main Navigation Links -->
+            <div class="flex items-center space-x-1">
+              <button 
+                @click="currentView = 'dashboard'" 
+                :class="['px-4 py-2 rounded-md font-medium transition', currentView === 'dashboard' ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100']"
+              >
+                <svg class="h-5 w-5 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                Dashboard
+              </button>
+              
+              <button 
+                @click="currentView = 'drive'" 
+                :class="['px-4 py-2 rounded-md font-medium transition', currentView === 'drive' ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100']"
+              >
+                <svg class="h-5 w-5 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                </svg>
+                Drive
+              </button>
+              
+              <button 
+                @click="currentView = 'shared'" 
+                :class="['px-4 py-2 rounded-md font-medium transition', currentView === 'shared' ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100']"
+              >
+                <svg class="h-5 w-5 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                </svg>
+                Shared
+              </button>
+            </div>
+
+            <!-- User Menu -->
+            <div class="flex items-center space-x-4">
+              <span class="text-sm text-gray-600">{{ user?.name }}</span>
+              <button v-if="user?.is_admin" @click="currentView = 'admin'" class="px-3 py-2 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-700">
                 Admin Panel
               </button>
-              <button @click="handleLogout" class="text-red-600 hover:text-red-800 font-medium">Logout</button>
+              <button @click="handleLogout" class="px-3 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700">
+                Logout
+              </button>
             </div>
           </div>
         </div>
       </nav>
 
-      <!-- Main Content -->
-      <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <!-- Welcome Section -->
-        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 class="text-3xl font-bold text-gray-900 mb-2">Welcome to PMS Drive</h2>
-          <p class="text-gray-600">
-            Your Project Management System powered by Laravel {{ laravelVersion }} and Vue {{ vueVersion }}
-          </p>
-          <p v-if="user?.is_admin" class="mt-2 text-purple-600 font-semibold">
-            ⭐ Administrator Access
-          </p>
-        </div>
-
-        <!-- Feature Cards -->
-        <div class="grid md:grid-cols-3 gap-6">
-          <!-- Project Management Card -->
-          <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition-shadow">
-            <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
-              <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-            </div>
-            <h3 class="text-xl font-semibold text-gray-900 mb-2">Project Management</h3>
-            <p class="text-gray-600">Organize and track all your projects in one place with powerful tools.</p>
-          </div>
-
-          <!-- Task Tracking Card -->
-          <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition-shadow">
-            <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
-              <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-              </svg>
-            </div>
-            <h3 class="text-xl font-semibold text-gray-900 mb-2">Task Tracking</h3>
-            <p class="text-gray-600">Keep track of tasks, deadlines, and progress with ease.</p>
-          </div>
-
-          <!-- Team Collaboration Card -->
-          <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition-shadow">
-            <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
-              <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-            </div>
-            <h3 class="text-xl font-semibold text-gray-900 mb-2">Team Collaboration</h3>
-            <p class="text-gray-600">Work together seamlessly with your team members.</p>
-          </div>
-        </div>
-
-        <!-- Interactive Demo -->
-        <div class="mt-6 bg-white rounded-lg shadow-md p-6">
-          <h3 class="text-xl font-semibold text-gray-900 mb-4">Vue Reactivity Demo</h3>
-          <div class="flex items-center space-x-4">
-            <button 
-              @click="incrementCounter" 
-              class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg transition duration-200"
-            >
-              Click Me!
-            </button>
-            <span class="text-lg text-gray-700">Counter: <span class="font-bold text-blue-600">{{ counter }}</span></span>
-          </div>
-        </div>
+      <!-- Main Content Area -->
+      <main class="flex-1">
+        <!-- Dashboard View -->
+        <UserDashboard 
+          v-if="currentView === 'dashboard'" 
+          :user="user"
+          @navigate="handleNavigate"
+        />
+        
+        <!-- Drive View -->
+        <Drive v-else-if="currentView === 'drive'" />
+        
+        <!-- Shared View -->
+        <Shared 
+          v-else-if="currentView === 'shared'" 
+          @navigate="handleNavigate"
+        />
+        
+        <!-- Admin Panel -->
+        <AdminPanel
+          v-else-if="currentView === 'admin'"
+          @back-to-dashboard="currentView = 'dashboard'"
+          @logout="handleLogout"
+        />
       </main>
 
       <Footer />
@@ -119,21 +109,21 @@ import axios from 'axios';
 import Login from './components/Login.vue';
 import Register from './components/Register.vue';
 import AdminPanel from './components/AdminPanel.vue';
+import UserDashboard from './components/UserDashboard.vue';
+import Drive from './components/Drive.vue';
+import Shared from './components/Shared.vue';
 import Footer from './components/Footer.vue';
 
-const laravelVersion = '12.47.0';
-const vueVersion = '3.x';
-const counter = ref(0);
 const currentView = ref('login');
 const user = ref(null);
-
-const incrementCounter = () => {
-  counter.value++;
-};
 
 const handleLogin = (userData) => {
   user.value = userData;
   currentView.value = 'dashboard';
+};
+
+const handleNavigate = (view) => {
+  currentView.value = view;
 };
 
 const handleLogout = async () => {
