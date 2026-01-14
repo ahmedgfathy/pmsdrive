@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login Test</title>
+</head>
+<body>
+    <h1>PMS Drive - Login Diagnostic Test</h1>
+    
+    <div id="status"></div>
+    
+    <form id="loginForm">
+        <input type="email" id="email" placeholder="Email" value="ahmed.fathy@pms.eg"><br><br>
+        <input type="password" id="password" placeholder="Password" value="admin123"><br><br>
+        <button type="submit">Test Login</button>
+    </form>
+    
+    <div id="result" style="margin-top: 20px; padding: 10px; background: #f0f0f0;"></div>
+
+    <script>
+        const status = document.getElementById('status');
+        const result = document.getElementById('result');
+        
+        status.innerHTML = '<p>Current URL: ' + window.location.href + '</p>';
+        status.innerHTML += '<p>Origin: ' + window.location.origin + '</p>';
+        
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            result.innerHTML = '<p>Step 1: Getting CSRF cookie...</p>';
+            
+            try {
+                // Step 1: Get CSRF cookie
+                const csrfResponse = await fetch(window.location.origin + '/sanctum/csrf-cookie', {
+                    credentials: 'include'
+                });
+                
+                result.innerHTML += '<p style="color: green;">✓ CSRF cookie retrieved (Status: ' + csrfResponse.status + ')</p>';
+                
+                // Get CSRF token from cookie
+                const csrfToken = document.cookie
+                    .split('; ')
+                    .find(row => row.startsWith('XSRF-TOKEN='))
+                    ?.split('=')[1];
+                
+                result.innerHTML += '<p>CSRF Token: ' + (csrfToken ? 'Found' : 'Not found') + '</p>';
+                
+                // Step 2: Login
+                result.innerHTML += '<p>Step 2: Attempting login...</p>';
+                
+                const loginResponse = await fetch(window.location.origin + '/api/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-XSRF-TOKEN': decodeURIComponent(csrfToken || '')
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await loginResponse.json();
+                
+                if (loginResponse.ok) {
+                    result.innerHTML += '<p style="color: green;">✓ Login successful!</p>';
+                    result.innerHTML += '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                } else {
+                    result.innerHTML += '<p style="color: red;">✗ Login failed (Status: ' + loginResponse.status + ')</p>';
+                    result.innerHTML += '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                }
+                
+            } catch (error) {
+                result.innerHTML += '<p style="color: red;">Error: ' + error.message + '</p>';
+            }
+        });
+    </script>
+</body>
+</html>

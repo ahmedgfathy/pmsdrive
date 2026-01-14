@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\File;
+use App\Models\Folder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -20,7 +21,7 @@ class StorageController extends Controller
         $fileTypeStats = File::where('user_id', $user->id)
             ->select(
                 DB::raw('COALESCE(
-                    CASE 
+                    CASE
                         WHEN mime_type LIKE "image/%" THEN "Images"
                         WHEN mime_type LIKE "video/%" THEN "Videos"
                         WHEN mime_type LIKE "audio/%" THEN "Audio"
@@ -33,7 +34,6 @@ class StorageController extends Controller
                         ELSE "Other"
                     END, "Other"
                 ) as type'),
-                DB::raw('SUM(size) as total_size'),
                 DB::raw('COUNT(*) as count')
             )
             ->groupBy('type')
@@ -46,12 +46,13 @@ class StorageController extends Controller
             ->limit(10)
             ->get();
 
-        // Get largest files
-        $largestFiles = File::where('user_id', $user->id)
-            ->with('folder')
-            ->orderBy('size', 'desc')
-            ->limit(10)
-            ->get();
+        // Get total folders
+        $totalFolders = Folder::where('user_id', $user->id)->count();
+
+        // Get shared files count (files shared WITH this user)
+        $sharedFilesCount = DB::table('shared_files')
+            ->where('shared_with_user_id', $user->id)
+            ->count();
 
         return response()->json([
             'storage_used' => $user->storage_used,
@@ -59,10 +60,11 @@ class StorageController extends Controller
             'storage_percentage' => $user->storage_percentage,
             'formatted_storage_used' => $user->formatted_storage_used,
             'formatted_storage_quota' => $user->formatted_storage_quota,
-            'file_type_stats' => $fileTypeStats,
+            'file_types' => $fileTypeStats, // Changed from file_type_stats to file_types
             'total_files' => File::where('user_id', $user->id)->count(),
+            'total_folders' => $totalFolders,
+            'shared_files' => $sharedFilesCount,
             'recent_files' => $recentFiles,
-            'largest_files' => $largestFiles,
         ]);
     }
 
@@ -80,7 +82,7 @@ class StorageController extends Controller
             'formatted_storage_used' => $user->formatted_storage_used,
             'formatted_storage_quota' => $user->formatted_storage_quota,
             'total_files' => File::where('user_id', $user->id)->count(),
-            'total_folders' => $user->folders()->count(),
+            'total_folders' => Folder::where('user_id', $user->id)->count(),
         ]);
     }
 }

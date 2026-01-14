@@ -7,14 +7,10 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\FileController;
 use App\Http\Controllers\FolderController;
 use App\Http\Controllers\StorageController;
-use App\Http\Controllers\ShareController;
 
 // Public routes
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
-
-// Public share link download (no authentication required)
-Route::get('/share/{token}', [ShareController::class, 'downloadViaPublicLink']);
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
@@ -43,11 +39,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/files/{id}', [FileController::class, 'destroy']);
     Route::post('/files/delete-multiple', [FileController::class, 'destroyMultiple']);
     
-    // Share routes
-    Route::post('/files/{id}/share/user', [ShareController::class, 'shareWithUser']);
-    Route::post('/files/{id}/share/link', [ShareController::class, 'generatePublicLink']);
-    Route::post('/files/{id}/share/email', [ShareController::class, 'sendLinkByEmail']);
-    Route::get('/files/shared', [ShareController::class, 'getSharedFiles']);
-    Route::delete('/files/{fileId}/share/{userId}', [ShareController::class, 'removeShare']);
-
+    // Admin routes
+    Route::middleware('can:viewAny,App\Models\User')->group(function () {
+        Route::get('/admin/users/pending', [AdminController::class, 'pendingUsers']);
+        Route::get('/admin/users', [AdminController::class, 'allUsers']);
+        Route::post('/admin/users/{id}/approve', [AdminController::class, 'approveUser']);
+        Route::delete('/admin/users/{id}/reject', [AdminController::class, 'rejectUser']);
+    });
 });

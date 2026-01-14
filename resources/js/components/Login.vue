@@ -92,6 +92,9 @@ const handleLogin = async () => {
   loading.value = true;
 
   try {
+    // Get CSRF cookie first
+    await axios.get('/sanctum/csrf-cookie');
+    
     const response = await axios.post('/api/login', {
       email: email.value,
       password: password.value

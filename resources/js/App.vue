@@ -41,7 +41,7 @@
               <button
                 v-for="tab in tabs"
                 :key="tab.value"
-                @click="activeTab = tab.value"
+                @click="changeTab(tab.value)"
                 :class="[
                   'px-6 py-2 rounded-full text-sm font-medium transition-all duration-300 flex items-center space-x-2',
                   activeTab === tab.value
@@ -59,7 +59,7 @@
               <!-- Admin Button -->
               <button
                 v-if="user.is_admin"
-                @click="activeTab = 'admin'"
+                @click="changeTab('admin')"
                 :class="[
                   'px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 flex items-center space-x-2',
                   activeTab === 'admin'
@@ -116,7 +116,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import axios from 'axios';
 import Login from './components/Login.vue';
 import Register from './components/Register.vue';
@@ -134,6 +134,15 @@ const user = ref(null);
 const isAuthenticated = ref(false);
 const currentView = ref('login');
 const activeTab = ref('dashboard');
+
+// Watch activeTab and save to localStorage
+watch(activeTab, (newTab) => {
+  localStorage.setItem('activeTab', newTab);
+});
+
+const changeTab = (tabValue) => {
+  activeTab.value = tabValue;
+};
 
 const handleLogin = async (userData) => {
   try {
@@ -160,6 +169,7 @@ const handleLogout = async () => {
     await axios.post('/api/logout');
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem('activeTab'); // Clear saved tab
     delete axios.defaults.headers.common['Authorization'];
 
     user.value = null;
@@ -222,9 +232,16 @@ onMounted(async () => {
       user.value = response.data;
       isAuthenticated.value = true;
       currentView.value = 'dashboard';
+      
+      // Restore last active tab
+      const savedTab = localStorage.getItem('activeTab');
+      if (savedTab && ['dashboard', 'drive', 'shared', 'admin'].includes(savedTab)) {
+        activeTab.value = savedTab;
+      }
     } catch (err) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+      localStorage.removeItem('activeTab');
       delete axios.defaults.headers.common['Authorization'];
       currentView.value = 'login';
     }
