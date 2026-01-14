@@ -1,8 +1,27 @@
 <template>
   <div class="min-h-screen flex flex-col">
-    <Login v-if="!isAuthenticated" @login="handleLogin" />
+    <!-- Login Page -->
+    <Login 
+      v-if="currentView === 'login'" 
+      @login="handleLogin" 
+      @show-register="currentView = 'register'"
+    />
     
-    <template v-else>
+    <!-- Register Page -->
+    <Register 
+      v-else-if="currentView === 'register'" 
+      @show-login="currentView = 'login'"
+    />
+
+    <!-- Admin Panel -->
+    <AdminPanel
+      v-else-if="currentView === 'admin'"
+      @back-to-dashboard="currentView = 'dashboard'"
+      @logout="handleLogout"
+    />
+    
+    <!-- Dashboard (Authenticated) -->
+    <template v-else-if="currentView === 'dashboard'">
       <!-- Navigation Bar -->
       <nav class="bg-white shadow-lg">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -12,10 +31,14 @@
               <h1 class="text-2xl font-bold text-blue-600">PMS Drive</h1>
             </div>
             <div class="flex items-center space-x-8">
+              <span class="text-gray-600 text-sm">Welcome, {{ user?.name }}</span>
               <a href="#" class="text-gray-700 hover:text-blue-600 font-medium">Dashboard</a>
               <a href="#" class="text-gray-700 hover:text-blue-600 font-medium">Projects</a>
               <a href="#" class="text-gray-700 hover:text-blue-600 font-medium">Tasks</a>
-              <button @click="logout" class="text-red-600 hover:text-red-800 font-medium">Logout</button>
+              <button v-if="user?.is_admin" @click="currentView = 'admin'" class="text-purple-600 hover:text-purple-800 font-medium">
+                Admin Panel
+              </button>
+              <button @click="handleLogout" class="text-red-600 hover:text-red-800 font-medium">Logout</button>
             </div>
           </div>
         </div>
@@ -28,6 +51,9 @@
           <h2 class="text-3xl font-bold text-gray-900 mb-2">Welcome to PMS Drive</h2>
           <p class="text-gray-600">
             Your Project Management System powered by Laravel {{ laravelVersion }} and Vue {{ vueVersion }}
+          </p>
+          <p v-if="user?.is_admin" class="mt-2 text-purple-600 font-semibold">
+            ⭐ Administrator Access
           </p>
         </div>
 
@@ -88,24 +114,58 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
+import axios from 'axios';
 import Login from './components/Login.vue';
+import Register from './components/Register.vue';
+import AdminPanel from './components/AdminPanel.vue';
 import Footer from './components/Footer.vue';
 
 const laravelVersion = '12.47.0';
 const vueVersion = '3.x';
 const counter = ref(0);
-const isAuthenticated = ref(false);
+const currentView = ref('login');
+const user = ref(null);
 
 const incrementCounter = () => {
   counter.value++;
 };
 
-const handleLogin = () => {
-  isAuthenticated.value = true;
+const handleLogin = (userData) => {
+  user.value = userData;
+  currentView.value = 'dashboard';
 };
 
-const logout = () => {
-  isAuthenticated.value = false;
+const handleLogout = async () => {
+  try {
+    await axios.post('/api/logout');
+  } catch (err) {
+    console.error('Logout error:', err);
+  } finally {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    delete axios.defaults.headers.common['Authorization'];
+    user.value = null;
+    currentView.value = 'login';
+  }
 };
+
+// Check if user is already logged in
+onMounted(async () => {
+  const token = localStorage.getItem('token');
+  const savedUser = localStorage.getItem('user');
+  
+  if (token && savedUser) {
+    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    try {
+      const response = await axios.get('/api/me');
+      user.value = response.data;
+      currentView.value = 'dashboard';
+    } catch (err) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      delete axios.defaults.headers.common['Authorization'];
+    }
+  }
+});
 </script>
