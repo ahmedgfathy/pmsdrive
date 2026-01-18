@@ -13,7 +13,13 @@
 
     <!-- Not Authenticated Views -->
     <div v-if="!isAuthenticated">
-      <Login v-if="currentView === 'login'" @login="handleLogin" @show-register="currentView = 'register'" />
+      <Login
+        v-if="currentView === 'login'"
+        :loading="loginLoading"
+        :error="loginError"
+        @login="handleLogin"
+        @show-register="currentView = 'register'"
+      />
       <Register v-else @show-login="currentView = 'login'" />
     </div>
 
@@ -32,7 +38,7 @@
               </div>
               <div>
                 <h1 class="text-xl font-bold text-white tracking-tight">PMSDrive</h1>
-                <p class="text-xs text-blue-300">Cloud Storage</p>
+                <p class="text-xs text-blue-300">Onprim Storage</p>
               </div>
             </div>
 
@@ -134,6 +140,8 @@ const user = ref(null);
 const isAuthenticated = ref(false);
 const currentView = ref('login');
 const activeTab = ref('dashboard');
+const loginLoading = ref(false);
+const loginError = ref('');
 
 // Watch activeTab and save to localStorage
 watch(activeTab, (newTab) => {
@@ -144,42 +152,75 @@ const changeTab = (tabValue) => {
   activeTab.value = tabValue;
 };
 
-const handleLogin = async (userData) => {
+const handleLogin = async (credentials) => {
+  loginError.value = '';
+  loginLoading.value = true;
+
   try {
-    // CRITICAL: Get CSRF cookie BEFORE login request
     await axios.get('/sanctum/csrf-cookie');
-    
-    const response = await axios.post('/api/login', userData);
+
+    const response = await axios.post('/api/login', {
+      email: credentials.email,
+      password: credentials.password
+    });
+
     localStorage.setItem('token', response.data.token);
     localStorage.setItem('user', JSON.stringify(response.data.user));
     axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
 
     user.value = response.data.user;
     isAuthenticated.value = true;
-    currentView.value = 'dashboard';
+    activeTab.value = 'dashboard';
+    currentView.value = 'login';
 
     success(`Welcome back, ${response.data.user.name}!`);
   } catch (err) {
-    error(err.response?.data?.message || 'Login failed. Please check your credentials.');
+    let message = err.response?.data?.message;
+
+    if (!message && err.response?.data?.errors) {
+      const firstError = Object.values(err.response.data.errors).flat()[0];
+      if (firstError) {
+        message = firstError;
+      }
+    }
+
+    if (!message) {
+      message = 'Login failed. Please check your credentials.';
+    }
+
+    loginError.value = message;
+    error(message);
+  } finally {
+    loginLoading.value = false;
   }
 };
 
 const handleLogout = async () => {
+  let logoutError = null;
+
   try {
+    await axios.get('/sanctum/csrf-cookie');
     await axios.post('/api/logout');
+  } catch (err) {
+    logoutError = err;
+  } finally {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    localStorage.removeItem('activeTab'); // Clear saved tab
+    localStorage.removeItem('activeTab');
     delete axios.defaults.headers.common['Authorization'];
 
     user.value = null;
     isAuthenticated.value = false;
     currentView.value = 'login';
     activeTab.value = 'dashboard';
+    loginError.value = '';
+    loginLoading.value = false;
 
-    success('Logged out successfully');
-  } catch (err) {
-    error('Logout failed. Please try again.');
+    if (logoutError && ![401, 419].includes(logoutError.response?.status)) {
+      error('Logout failed. Please try again.');
+    } else {
+      success('Logged out successfully');
+    }
   }
 };
 

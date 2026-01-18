@@ -8,6 +8,7 @@ use App\Http\Controllers\FileController;
 use App\Http\Controllers\FolderController;
 use App\Http\Controllers\StorageController;
 use App\Http\Controllers\ShareController;
+use App\Http\Controllers\FileRestrictionController;
 
 // Public routes
 Route::post('/register', [AuthController::class, 'register']);
@@ -49,5 +50,19 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/files/{id}/share/email', [ShareController::class, 'sendLinkByEmail']);
     Route::get('/files/shared', [ShareController::class, 'getSharedFiles']);
     Route::delete('/files/{fileId}/share/{userId}', [ShareController::class, 'removeShare']);
+
+    // Admin routes
+    Route::prefix('admin')->group(function () {
+        Route::get('/users/pending', [AdminController::class, 'pendingUsers']);
+        Route::get('/users', [AdminController::class, 'allUsers']);
+        Route::post('/users/{id}/approve', [AdminController::class, 'approveUser']);
+        Route::delete('/users/{id}/reject', [AdminController::class, 'rejectUser']);
+        Route::put('/users/{id}/quota', [AdminController::class, 'updateQuota']);
+
+        Route::get('/file-restrictions', [FileRestrictionController::class, 'index']);
+        Route::post('/file-restrictions', [FileRestrictionController::class, 'store']);
+        Route::put('/file-restrictions/{rule}', [FileRestrictionController::class, 'update']);
+        Route::delete('/file-restrictions/{rule}', [FileRestrictionController::class, 'destroy']);
+    });
 
 });

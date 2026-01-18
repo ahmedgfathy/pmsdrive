@@ -42,23 +42,23 @@
           </div>
 
           <!-- Error Message -->
-          <div v-if="error" class="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg">
-            <span v-if="error.includes('System Admin')">
-              {{ error.split('System Admin')[0] }}
+          <div v-if="props.error" class="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+            <span v-if="props.error.includes('System Admin')">
+              {{ props.error.split('System Admin')[0] }}
               <a href="mailto:ahmed.fathy@pms.eg" class="font-semibold underline hover:text-red-900">
                 System Admin: Ahmed Fathy
               </a>
             </span>
-            <span v-else>{{ error }}</span>
+            <span v-else>{{ props.error }}</span>
           </div>
 
           <!-- Login Button -->
           <button
             type="submit"
-            :disabled="loading"
+            :disabled="props.loading"
             class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition duration-200 shadow-md hover:shadow-lg disabled:opacity-50"
           >
-            {{ loading ? 'Signing In...' : 'Sign In' }}
+            {{ props.loading ? 'Signing In...' : 'Sign In' }}
           </button>
         </form>
 
@@ -78,40 +78,27 @@
 
 <script setup>
 import { ref } from 'vue';
-import axios from 'axios';
 
 const emit = defineEmits(['login', 'show-register']);
 
+const props = defineProps({
+  loading: {
+    type: Boolean,
+    default: false
+  },
+  error: {
+    type: String,
+    default: ''
+  }
+});
+
 const email = ref('');
 const password = ref('');
-const error = ref('');
-const loading = ref(false);
 
-const handleLogin = async () => {
-  error.value = '';
-  loading.value = true;
-
-  try {
-    const response = await axios.post('/api/login', {
-      email: email.value,
-      password: password.value
-    });
-
-    localStorage.setItem('token', response.data.token);
-    localStorage.setItem('user', JSON.stringify(response.data.user));
-    axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
-    
-    emit('login', response.data.user);
-  } catch (err) {
-    if (err.response?.status === 403) {
-      error.value = err.response.data.message;
-    } else if (err.response?.data?.errors) {
-      error.value = Object.values(err.response.data.errors).flat().join(', ');
-    } else {
-      error.value = err.response?.data?.message || 'Login failed. Please try again.';
-    }
-  } finally {
-    loading.value = false;
-  }
+const handleLogin = () => {
+  emit('login', {
+    email: email.value.trim(),
+    password: password.value
+  });
 };
 </script>

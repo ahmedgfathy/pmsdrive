@@ -39,6 +39,12 @@ class User extends Authenticatable
         'remember_token',
     ];
 
+    protected $appends = [
+        'formatted_storage_used',
+        'formatted_storage_quota',
+        'storage_percentage',
+    ];
+
     /**
      * Get the attributes that should be cast.
      *

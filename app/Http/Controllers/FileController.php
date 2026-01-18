@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\File;
 use App\Models\User;
+use App\Models\FileExtensionRule;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -42,6 +43,16 @@ class FileController extends Controller
         $uploadedFiles = [];
 
         foreach ($request->file('files') as $uploadedFile) {
+            $extension = strtolower($uploadedFile->getClientOriginalExtension());
+            $rule = FileExtensionRule::normalizedExtension($extension)->first();
+
+            if ($rule && !$rule->is_allowed) {
+                return response()->json([
+                    'message' => $rule->message ?: "Uploads with .{$extension} files are not permitted.",
+                    'extension' => $extension,
+                ], 422);
+            }
+
             // Check storage quota
             $fileSize = $uploadedFile->getSize();
             if (($user->storage_used + $fileSize) > $user->storage_quota) {
@@ -54,7 +65,6 @@ class FileController extends Controller
 
             // Generate unique filename
             $originalName = $uploadedFile->getClientOriginalName();
-            $extension = $uploadedFile->getClientOriginalExtension();
             $uniqueName = Str::uuid() . '.' . $extension;
 
             // Store file

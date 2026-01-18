@@ -19,7 +19,7 @@ class ShareController extends Controller
     {
         $validated = $request->validate([
             'user_email' => 'required|email|exists:users,email',
-            'permission' => 'in:view,download',
+            'permission' => 'in:view,edit',
         ]);
 
         $file = File::findOrFail($fileId);
@@ -49,7 +49,7 @@ class ShareController extends Controller
         // Create share record
         DB::table('shared_files')->insert([
             'file_id' => $fileId,
-            'shared_by_user_id' => Auth::id(),
+            'owner_id' => Auth::id(),
             'shared_with_user_id' => $sharedWithUser->id,
             'permission' => $validated['permission'] ?? 'view',
             'created_at' => now(),
@@ -177,7 +177,7 @@ class ShareController extends Controller
     {
         $sharedFiles = DB::table('shared_files')
             ->join('files', 'shared_files.file_id', '=', 'files.id')
-            ->join('users', 'shared_files.shared_by_user_id', '=', 'users.id')
+            ->join('users', 'shared_files.owner_id', '=', 'users.id')
             ->where('shared_files.shared_with_user_id', Auth::id())
             ->select(
                 'files.*',
